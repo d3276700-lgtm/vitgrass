@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Green Vitamin — сок ростков пшеницы</title>
+<meta name="description" content="Green Vitamin — живой сок ростков пшеницы (витграсс). Сделано в Казахстане.">
+<meta property="og:title" content="Green Vitamin — сок ростков пшеницы">
+<meta property="og:description" content="Сок ростков пшеницы. Сделано в Казахстане.">
+<meta name="theme-color" content="#05070a">
+<script src="i18n.js?v=2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+html,body{touch-action:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body{margin:0;min-height:100%;background:#050604;color:#d8c9a0;
+  font-family:"Figtree",system-ui,sans-serif;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;
+  padding:4.5vh 20px 2.5vh;height:100vh;height:100dvh}
+#fluid{position:fixed;inset:0;z-index:1;display:block;width:100%;height:100%}
+.stage{position:relative;z-index:2;pointer-events:none}
+.eyebrow{font-size:clamp(11px,1.5vw,14px);letter-spacing:.34em;text-transform:uppercase;color:#ffffff;margin-bottom:14px;
+  font-weight:500;text-shadow:0 1px 12px rgba(0,0,0,.8)}
+.gold{font-family:"Playfair Display",serif;font-weight:800;line-height:1.02;letter-spacing:.01em;margin:0;color:#efe6cf;
+  text-shadow:0 2px 30px rgba(0,0,0,.55)}
+.brand{font-size:clamp(30px,6vw,76px)}
+.sub{font-size:clamp(26px,5.4vw,64px);margin-top:4px;font-weight:600}
+/* «Сделано в Казахстане» — ярко, синими буквами (как флаг Казахстана) */
+.kz{margin:12px 0 8px;font-family:"Figtree",system-ui,sans-serif;font-weight:800;
+  text-transform:uppercase;letter-spacing:.16em;font-size:clamp(16px,2.6vw,30px);
+  color:#15256e;
+  -webkit-text-stroke:2.4px #ffffff;paint-order:stroke fill;
+  text-shadow:0 0 10px rgba(255,255,255,.55), 0 2px 10px rgba(0,0,0,.45)}
+/* телефон повёрнут боком (широкий и низкий): текст слева, упаковка справа — соразмерно */
+@media (max-height:540px) and (orientation:landscape){
+  body{flex-direction:row;align-items:center;justify-content:center;gap:3.5vw;padding:2vh 4vw}
+  .stage{flex:0 1 auto;max-width:56%}
+  .eyebrow{font-size:clamp(9px,2.1vh,13px);margin-bottom:5px}
+  .brand{font-size:clamp(22px,8vh,46px)}
+  .kz{font-size:clamp(12px,3.4vh,22px);margin:5px 0 3px}
+  .packbox{flex:0 0 auto;width:auto;height:100%;align-items:center;margin-top:0}
+  .pack-bottom{max-height:62vh;max-width:30vw}
+}
+/* упаковка — в самый низ, крупно, с тенью и свечением */
+/* упаковка сама подстраивается под оставшуюся высоту — всегда помещается целиком */
+.packbox{flex:1 1 auto;min-height:0;width:100%;display:flex;align-items:flex-end;justify-content:center;
+  z-index:2;pointer-events:none;margin-top:12px;perspective:1100px}
+.pack-bottom{max-height:100%;max-width:min(250px,64vw);width:auto;height:auto;display:block;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  animation:packfloat 6s ease-in-out infinite;
+  filter:
+    drop-shadow(0 18px 24px rgba(0,0,0,.6))
+    drop-shadow(0 0 32px rgba(255,255,255,.2))
+    drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+@keyframes packfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="buy.css?v=37">
+<link rel="stylesheet" href="theme.css?v=2">
+</head>
+<body>
+<canvas id="fluid"></canvas>
+<div class="stage">
+  <div class="eyebrow" data-t="Сок ростков пшеницы · с 2018 года">Сок ростков пшеницы · с 2018 года</div>
+  <h1 class="gold brand">GREEN VITAMIN</h1>
+  <div class="kz">Made in Kazakhstan</div>
+  <button class="about" id="aboutBtn" type="button" data-t="Всё о продукте">Всё о продукте</button>
+</div>
+<div class="packbox"><img class="pack-bottom" src="pack-2026.webp?v=1" alt="Green Vitamin упаковка" data-t-alt="Green Vitamin упаковка"></div>
+<button class="buy" id="buyBtn" type="button" data-t="Купить">Купить</button>
+<script>i18nApply(); document.title = T('Green Vitamin — сок ростков пшеницы'); i18nControls();</script>
+
+
+
+<script>
+// ==== Симуляция жидкости (Navier-Stokes) на WebGL. Собственная реализация. ====
+const canvas = document.getElementById('fluid');
+
+const config = {
+  SIM_RESOLUTION: 128,
+  DYE_RESOLUTION: 1024,
+  DENSITY_DISSIPATION: 0.985,  // как долго живёт цвет (ближе к 1 = дольше)
+  VELOCITY_DISSIPATION: 0.984, // как долго живёт движение
+  PRESSURE: 0.8,
+  PRESSURE_ITERATIONS: 20,
+  CURL: 32,                    // завихрения (больше = сильнее крутит)
+  SPLAT_RADIUS: 0.0022,
+  SPLAT_FORCE: 6500,
+};
+
+const { gl, ext } = getWebGLContext(canvas);
+
+function getWebGLContext(canvas){
+  const params = { alpha:true, depth:false, stencil:false, antialias:false, preserveDrawingBuffer:false };
+  let gl = canvas.getContext('webgl2', params);
+  const isWebGL2 = !!gl;
+  if(!isWebGL2) gl = canvas.getContext('webgl', params) || canvas.getContext('experimental-webgl', params);
+
+  let halfFloat, supportLinearFiltering;
+  if(isWebGL2){
+    gl.getExtension('EXT_color_buffer_float');
+    supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
+  } else {
+    halfFloat = gl.getExtension('OES_texture_half_float');
+    supportLinearFiltering = gl.getExtension('OES_texture_half_float_linear');
+  }
+  gl.clearColor(0,0,0,1);
+
+  const halfFloatTexType = isWebGL2 ? gl.HALF_FLOAT : halfFloat.HALF_FLOAT_OES;
+  let formatRGBA, formatRG, formatR;
+
+  if(isWebGL2){
+    formatRGBA = getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, halfFloatTexType);
+    formatRG   = getSupportedFormat(gl, gl.RG16F,  gl.RG,  halfFloatTexType);
+    formatR    = getSupportedFormat(gl, gl.R16F,   gl.RED, halfFloatTexType);
+  } else {
+    formatRGBA = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+    formatRG   = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+    formatR    = getSupportedFormat(gl, gl.RGBA, gl.RGBA, halfFloatTexType);
+  }
+
+  return { gl, ext:{ formatRGBA, formatRG, formatR, halfFloatTexType, supportLinearFiltering } };
+}
+
+function getSupportedFormat(gl, internalFormat, format, type){
+  if(!supportRenderTextureFormat(gl, internalFormat, format, type)){
+    switch(internalFormat){
+      case gl.R16F:    return getSupportedFormat(gl, gl.RG16F, gl.RG, type);
+      case gl.RG16F:   return getSupportedFormat(gl, gl.RGBA16F, gl.RGBA, type);
+      default:         return null;
+    }
+  }
+  return { internalFormat, format };
+}
+function supportRenderTextureFormat(gl, internalFormat, format, type){
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, 4, 4, 0, format, type, null);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+  return status === gl.FRAMEBUFFER_COMPLETE;
+}
+
+// ---------- шейдеры ----------
+const baseVertex = `
+precision highp float;
+attribute vec2 aPosition;
+varying vec2 vUv;
+varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB;
+uniform vec2 texelSize;
+void main(){
+  vUv = aPosition * 0.5 + 0.5;
+  vL = vUv - vec2(texelSize.x, 0.0);
+  vR = vUv + vec2(texelSize.x, 0.0);
+  vT = vUv + vec2(0.0, texelSize.y);
+  vB = vUv - vec2(0.0, texelSize.y);
+  gl_Position = vec4(aPosition, 0.0, 1.0);
+}`;
+
+const copyShader = `
+precision mediump float; precision mediump sampler2D;
+varying highp vec2 vUv; uniform sampler2D uTexture;
+void main(){ gl_FragColor = texture2D(uTexture, vUv); }`;
+
+const clearShader = `
+precision mediump float; precision mediump sampler2D;
+varying highp vec2 vUv; uniform sampler2D uTexture; uniform float value;
+void main(){ gl_FragColor = value * texture2D(uTexture, vUv); }`;
+
+// display: добавляем лёгкую «масляную» подсветку по яркости
+const displayShader = `
+precision highp float; precision highp sampler2D;
+varying vec2 vUv; uniform sampler2D uTexture; uniform float uLight;
+void main(){
+  vec3 c = texture2D(uTexture, vUv).rgb;
+  float a = max(c.r, max(c.g, c.b));
+  if(uLight > 0.5){                       // светлая тема: густые цветные разводы на светлом фоне
+    vec3 p = max(c, 0.0); float m = max(p.r, max(p.g, p.b));
+    float b = min(1.0, max(m - 0.02, 0.0) * 3.0);
+    vec3 n = m > 0.02 ? p / m : vec3(0.0);
+    vec3 col = n * (0.36 + 0.48 * n.r * (1.0 - 0.6 * n.b));   // глубокие тона: тёмно-синий и изумруд темнее, красный и золото ярче
+    gl_FragColor = vec4(col * b, b);
+  } else gl_FragColor = vec4(c, a);
+}`;
+
+const splatShader = `
+precision highp float; precision highp sampler2D;
+varying vec2 vUv; uniform sampler2D uTarget; uniform float aspectRatio;
+uniform vec3 color; uniform vec2 point; uniform float radius;
+void main(){
+  vec2 p = vUv - point.xy; p.x *= aspectRatio;
+  vec3 splat = exp(-dot(p,p)/radius) * color;
+  vec3 base = texture2D(uTarget, vUv).xyz;
+  gl_FragColor = vec4(base + splat, 1.0);
+}`;
+
+const advectionShader = `
+precision highp float; precision highp sampler2D;
+varying vec2 vUv; uniform sampler2D uVelocity; uniform sampler2D uSource;
+uniform vec2 texelSize; uniform vec2 dyeTexelSize; uniform float dt; uniform float dissipation;
+vec4 bilerp(sampler2D sam, vec2 uv, vec2 tsize){
+  vec2 st = uv/tsize - 0.5;
+  vec2 iuv = floor(st); vec2 fuv = fract(st);
+  vec4 a = texture2D(sam, (iuv+vec2(0.5,0.5))*tsize);
+  vec4 b = texture2D(sam, (iuv+vec2(1.5,0.5))*tsize);
+  vec4 c = texture2D(sam, (iuv+vec2(0.5,1.5))*tsize);
+  vec4 d = texture2D(sam, (iuv+vec2(1.5,1.5))*tsize);
+  return mix(mix(a,b,fuv.x), mix(c,d,fuv.x), fuv.y);
+}
+void main(){
+  vec2 coord = vUv - dt * bilerp(uVelocity, vUv, texelSize).xy * texelSize;
+  vec4 result = bilerp(uSource, coord, dyeTexelSize);
+  float decay = 1.0 + dissipation * dt;
+  gl_FragColor = result / decay;
+}`;
+
+const divergenceShader = `
+precision mediump float; precision mediump sampler2D;
+varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+uniform sampler2D uVelocity;
+void main(){
+  float L = texture2D(uVelocity, vL).x;
+  float R = texture2D(uVelocity, vR).x;
+  float T = texture2D(uVelocity, vT).y;
+  float B = texture2D(uVelocity, vB).y;
+  vec2 C = texture2D(uVelocity, vUv).xy;
+  if(vL.x < 0.0){ L = -C.x; }
+  if(vR.x > 1.0){ R = -C.x; }
+  if(vT.y > 1.0){ T = -C.y; }
+  if(vB.y < 0.0){ B = -C.y; }
+  float div = 0.5 * (R - L + T - B);
+  gl_FragColor = vec4(div, 0.0, 0.0, 1.0);
+}`;
+
+const curlShader = `
+precision mediump float; precision mediump sampler2D;
+varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+uniform sampler2D uVelocity;
+void main(){
+  float L = texture2D(uVelocity, vL).y;
+  float R = texture2D(uVelocity, vR).y;
+  float T = texture2D(uVelocity, vT).x;
+  float B = texture2D(uVelocity, vB).x;
+  float vorticity = R - L - T + B;
+  gl_FragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0);
+}`;
+
+const vorticityShader = `
+precision highp float; precision highp sampler2D;
+varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB;
+uniform sampler2D uVelocity; uniform sampler2D uCurl; uniform float curl; uniform float dt;
+void main(){
+  float L = texture2D(uCurl, vL).x;
+  float R = texture2D(uCurl, vR).x;
+  float T = texture2D(uCurl, vT).x;
+  float B = texture2D(uCurl, vB).x;
+  float C = texture2D(uCurl, vUv).x;
+  vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L));
+  force /= length(force) + 0.0001;
+  force *= curl * C;
+  force.y *= -1.0;
+  vec2 vel = texture2D(uVelocity, vUv).xy;
+  vel += force * dt;
+  vel = min(max(vel, -1000.0), 1000.0);
+  gl_FragColor = vec4(vel, 0.0, 1.0);
+}`;
+
+const pressureShader = `
+precision mediump float; precision mediump sampler2D;
+varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+uniform sampler2D uPressure; uniform sampler2D uDivergence;
+void main(){
+  float L = texture2D(uPressure, vL).x;
+  float R = texture2D(uPressure, vR).x;
+  float T = texture2D(uPressure, vT).x;
+  float B = texture2D(uPressure, vB).x;
+  float divergence = texture2D(uDivergence, vUv).x;
+  float pressure = (L + R + B + T - divergence) * 0.25;
+  gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0);
+}`;
+
+const gradientSubtractShader = `
+precision mediump float; precision mediump sampler2D;
+varying highp vec2 vUv; varying highp vec2 vL; varying highp vec2 vR; varying highp vec2 vT; varying highp vec2 vB;
+uniform sampler2D uPressure; uniform sampler2D uVelocity;
+void main(){
+  float L = texture2D(uPressure, vL).x;
+  float R = texture2D(uPressure, vR).x;
+  float T = texture2D(uPressure, vT).x;
+  float B = texture2D(uPressure, vB).x;
+  vec2 velocity = texture2D(uVelocity, vUv).xy;
+  velocity.xy -= vec2(R - L, T - B);
+  gl_FragColor = vec4(velocity, 0.0, 1.0);
+}`;
+
+// ---------- вспомогательное: компиляция ----------
+function compileShader(type, source){
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(shader), source);
+  return shader;
+}
+function createProgram(vs, fs){
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if(!gl.getProgramParameter(program, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(program));
+  return program;
+}
+function getUniforms(program){
+  const uniforms = {};
+  const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+  for(let i=0;i<count;i++){ const name = gl.getActiveUniform(program, i).name; uniforms[name] = gl.getUniformLocation(program, name); }
+  return uniforms;
+}
+class Program {
+  constructor(vs, fs){ this.program = createProgram(vs, fs); this.uniforms = getUniforms(this.program); }
+  bind(){ gl.useProgram(this.program); }
+}
+
+const baseVS = compileShader(gl.VERTEX_SHADER, baseVertex);
+const copyProg       = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, copyShader));
+const clearProg      = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, clearShader));
+const splatProg      = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, splatShader));
+const advectionProg  = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, advectionShader));
+const divergenceProg = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, divergenceShader));
+const curlProg       = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, curlShader));
+const vorticityProg  = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, vorticityShader));
+const pressureProg   = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, pressureShader));
+const gradientProg   = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, gradientSubtractShader));
+const displayProg    = new Program(baseVS, compileShader(gl.FRAGMENT_SHADER, displayShader));
+
+// ---------- геометрия (полный экран) ----------
+const blit = (()=>{
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, -1,1, 1,1, 1,-1]), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0,1,2, 0,2,3]), gl.STATIC_DRAW);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(0);
+  return (target)=>{
+    if(target==null){ gl.viewport(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight); gl.bindFramebuffer(gl.FRAMEBUFFER,null); }
+    else { gl.viewport(0,0,target.width,target.height); gl.bindFramebuffer(gl.FRAMEBUFFER,target.fbo); }
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+  };
+})();
+
+// ---------- буферы (FBO) ----------
+let dye, velocity, divergence, curl, pressure;
+
+function createFBO(w,h,internalFormat,format,type,param){
+  gl.activeTexture(gl.TEXTURE0);
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, param);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, param);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+  gl.viewport(0,0,w,h);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  const texelSizeX = 1.0/w, texelSizeY = 1.0/h;
+  return { texture, fbo, width:w, height:h, texelSizeX, texelSizeY,
+    attach(id){ gl.activeTexture(gl.TEXTURE0+id); gl.bindTexture(gl.TEXTURE_2D, texture); return id; } };
+}
+function createDoubleFBO(w,h,internalFormat,format,type,param){
+  let fbo1 = createFBO(w,h,internalFormat,format,type,param);
+  let fbo2 = createFBO(w,h,internalFormat,format,type,param);
+  return {
+    width:w, height:h, texelSizeX:fbo1.texelSizeX, texelSizeY:fbo1.texelSizeY,
+    get read(){ return fbo1; }, set read(v){ fbo1 = v; },
+    get write(){ return fbo2; }, set write(v){ fbo2 = v; },
+    swap(){ const t=fbo1; fbo1=fbo2; fbo2=t; }
+  };
+}
+
+function getResolution(resolution){
+  let aspect = gl.drawingBufferWidth / gl.drawingBufferHeight;
+  if(aspect < 1) aspect = 1.0/aspect;
+  const min = Math.round(resolution);
+  const max = Math.round(resolution * aspect);
+  if(gl.drawingBufferWidth > gl.drawingBufferHeight) return { width:max, height:min };
+  return { width:min, height:max };
+}
+
+function initFramebuffers(){
+  const simRes = getResolution(config.SIM_RESOLUTION);
+  const dyeRes = getResolution(config.DYE_RESOLUTION);
+  const texType = ext.halfFloatTexType;
+  const rgba = ext.formatRGBA, rg = ext.formatRG, r = ext.formatR;
+  const filtering = ext.supportLinearFiltering ? gl.LINEAR : gl.NEAREST;
+  gl.disable(gl.BLEND);
+
+  dye = createDoubleFBO(dyeRes.width, dyeRes.height, rgba.internalFormat, rgba.format, texType, filtering);
+  velocity = createDoubleFBO(simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
+  divergence = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
+  curl = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
+  pressure = createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
+}
+
+// ---------- указатели (мышь) ----------
+function Pointer(){
+  this.id = -1; this.down = false; this.moved = false;
+  this.texcoordX=0; this.texcoordY=0; this.prevTexcoordX=0; this.prevTexcoordY=0;
+  this.deltaX=0; this.deltaY=0; this.color=[0,0,0];
+}
+const pointers = [ new Pointer() ];
+
+// ---- «масляная/огненная» палитра, как у adrienquechon: красный→оранжевый→золото ----
+let hueBase = 0.0;
+function oilColor(){
+  // медленно плывём в тёплом диапазоне (0.00 красный → 0.13 золото),
+  // изредка проскакивает масляный фиолетово-синий отблеск
+  hueBase += 0.03;                                           // быстрее — переливы-полосы вдоль следа
+  if(document.documentElement.dataset.theme === 'light'){   // светлая тема: изумруд ↔ тёмно-синий ↔ (винный) красный ↔ золото, туда и обратно (без салатового)
+    const S = [[0.04,1.0,0.66],[0.06,0.12,1.0],[1.0,0.05,0.10],[1.0,0.68,0.05]];
+    const t = (0.5 + 0.5*Math.sin(hueBase*0.25)) * 3, k = Math.min(2, Math.floor(t)), u0 = t - k, u = u0*u0*(3 - 2*u0);
+    const A = S[k], B = S[k+1], W = 0.70;
+    return { r: (A[0]+(B[0]-A[0])*u)*W, g: (A[1]+(B[1]-A[1])*u)*W, b: (A[2]+(B[2]-A[2])*u)*W };
+  }
+  const m = Math.sin(hueBase);
+  let h, sat = 1.0, br = 0.28;
+  if(m > 0.58){                                             // ~20% времени — масляный сине-фиолетовый отблеск
+    h = 0.63 + 0.12 * (0.5 + 0.5*Math.sin(hueBase*2.3));    // синий → фиолетовый (0.63–0.75)
+    sat = 0.95; br = 0.48;
+  } else {                                                  // основной тёплый: красный → оранжевый → золото
+    h = 0.015 + 0.09 * (0.5 + 0.5*Math.sin(hueBase*0.7));
+    br = 0.50;
+  }
+  const c = HSVtoRGB(h, sat, 1.0);
+  c.r *= br; c.g *= br; c.b *= br;                            // яркость всплеска
+  return c;
+}
+function HSVtoRGB(h,s,v){
+  let r,g,b; const i=Math.floor(h*6); const f=h*6-i;
+  const p=v*(1-s), q=v*(1-f*s), t=v*(1-(1-f)*s);
+  switch(i%6){
+    case 0: r=v;g=t;b=p;break; case 1: r=q;g=v;b=p;break; case 2: r=p;g=v;b=t;break;
+    case 3: r=p;g=q;b=v;break; case 4: r=t;g=p;b=v;break; case 5: r=v;g=p;b=q;break;
+  }
+  return { r, g, b };
+}
+
+// ---------- шаг симуляции ----------
+let lastUpdate = Date.now();
+function calcDeltaTime(){
+  let now = Date.now();
+  let dt = (now - lastUpdate)/1000;
+  dt = Math.min(dt, 0.016666);
+  lastUpdate = now;
+  return dt;
+}
+
+function step(dt){
+  gl.disable(gl.BLEND);
+
+  // curl
+  curlProg.bind();
+  gl.uniform2f(curlProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+  gl.uniform1i(curlProg.uniforms.uVelocity, velocity.read.attach(0));
+  blit(curl);
+
+  // vorticity
+  vorticityProg.bind();
+  gl.uniform2f(vorticityProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+  gl.uniform1i(vorticityProg.uniforms.uVelocity, velocity.read.attach(0));
+  gl.uniform1i(vorticityProg.uniforms.uCurl, curl.attach(1));
+  gl.uniform1f(vorticityProg.uniforms.curl, config.CURL);
+  gl.uniform1f(vorticityProg.uniforms.dt, dt);
+  blit(velocity.write); velocity.swap();
+
+  // divergence
+  divergenceProg.bind();
+  gl.uniform2f(divergenceProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+  gl.uniform1i(divergenceProg.uniforms.uVelocity, velocity.read.attach(0));
+  blit(divergence);
+
+  // clear pressure
+  clearProg.bind();
+  gl.uniform1i(clearProg.uniforms.uTexture, pressure.read.attach(0));
+  gl.uniform1f(clearProg.uniforms.value, config.PRESSURE);
+  blit(pressure.write); pressure.swap();
+
+  // pressure solve
+  pressureProg.bind();
+  gl.uniform2f(pressureProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+  gl.uniform1i(pressureProg.uniforms.uDivergence, divergence.attach(0));
+  for(let i=0;i<config.PRESSURE_ITERATIONS;i++){
+    gl.uniform1i(pressureProg.uniforms.uPressure, pressure.read.attach(1));
+    blit(pressure.write); pressure.swap();
+  }
+
+  // gradient subtract
+  gradientProg.bind();
+  gl.uniform2f(gradientProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+  gl.uniform1i(gradientProg.uniforms.uPressure, pressure.read.attach(0));
+  gl.uniform1i(gradientProg.uniforms.uVelocity, velocity.read.attach(1));
+  blit(velocity.write); velocity.swap();
+
+  // advect velocity
+  advectionProg.bind();
+  gl.uniform2f(advectionProg.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+  gl.uniform2f(advectionProg.uniforms.dyeTexelSize, velocity.texelSizeX, velocity.texelSizeY);
+  gl.uniform1i(advectionProg.uniforms.uVelocity, velocity.read.attach(0));
+  gl.uniform1i(advectionProg.uniforms.uSource, velocity.read.attach(0));
+  gl.uniform1f(advectionProg.uniforms.dt, dt);
+  gl.uniform1f(advectionProg.uniforms.dissipation, (1.0-config.VELOCITY_DISSIPATION)*60.0);
+  blit(velocity.write); velocity.swap();
+
+  // advect dye
+  gl.uniform2f(advectionProg.uniforms.dyeTexelSize, dye.texelSizeX, dye.texelSizeY);
+  gl.uniform1i(advectionProg.uniforms.uVelocity, velocity.read.attach(0));
+  gl.uniform1i(advectionProg.uniforms.uSource, dye.read.attach(1));
+  gl.uniform1f(advectionProg.uniforms.dissipation, (1.0-config.DENSITY_DISSIPATION)*60.0);
+  blit(dye.write); dye.swap();
+}
+
+function render(){
+  gl.disable(gl.BLEND);
+  displayProg.bind();
+  gl.uniform1i(displayProg.uniforms.uTexture, dye.read.attach(0));
+  gl.uniform1f(displayProg.uniforms.uLight, document.documentElement.dataset.theme === 'light' ? 1 : 0);
+  blit(null);
+}
+
+// ---------- всплески (splat) ----------
+function splat(x, y, dx, dy, color){
+  splatProg.bind();
+  gl.uniform1i(splatProg.uniforms.uTarget, velocity.read.attach(0));
+  gl.uniform1f(splatProg.uniforms.aspectRatio, canvas.width/canvas.height);
+  gl.uniform2f(splatProg.uniforms.point, x, y);
+  gl.uniform3f(splatProg.uniforms.color, dx, dy, 0.0);
+  gl.uniform1f(splatProg.uniforms.radius, correctRadius(config.SPLAT_RADIUS));
+  blit(velocity.write); velocity.swap();
+
+  gl.uniform1i(splatProg.uniforms.uTarget, dye.read.attach(0));
+  gl.uniform3f(splatProg.uniforms.color, color.r, color.g, color.b);
+  blit(dye.write); dye.swap();
+}
+function correctRadius(radius){
+  const aspect = canvas.width/canvas.height;
+  if(aspect > 1) radius *= aspect;
+  return radius;
+}
+function splatPointer(p){
+  const dx = p.deltaX * config.SPLAT_FORCE;
+  const dy = p.deltaY * config.SPLAT_FORCE;
+  splat(p.texcoordX, p.texcoordY, dx, dy, p.color);
+}
+
+// ---------- ввод ----------
+function scaleByPixelRatio(v){ const ratio = Math.min(window.devicePixelRatio||1, 2); return Math.floor(v*ratio); }
+function resizeCanvas(){
+  const w = scaleByPixelRatio(canvas.clientWidth);
+  const h = scaleByPixelRatio(canvas.clientHeight);
+  if(canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; return true; }
+  return false;
+}
+function updatePointerMoveData(p, posX, posY){
+  p.prevTexcoordX = p.texcoordX; p.prevTexcoordY = p.texcoordY;
+  p.texcoordX = posX/canvas.width; p.texcoordY = 1.0 - posY/canvas.height;
+  p.deltaX = correctDeltaX(p.texcoordX - p.prevTexcoordX);
+  p.deltaY = correctDeltaY(p.texcoordY - p.prevTexcoordY);
+  p.moved = Math.abs(p.deltaX) > 0 || Math.abs(p.deltaY) > 0;
+}
+function correctDeltaX(delta){ const aspect = canvas.width/canvas.height; if(aspect<1) delta *= aspect; return delta; }
+function correctDeltaY(delta){ const aspect = canvas.width/canvas.height; if(aspect>1) delta /= aspect; return delta; }
+
+window.addEventListener('mousemove', e=>{
+  const p = pointers[0];
+  const posX = scaleByPixelRatio(e.clientX);
+  const posY = scaleByPixelRatio(e.clientY);
+  p.color = oilColor();
+  updatePointerMoveData(p, posX, posY);
+});
+window.addEventListener('touchstart', e=>{
+  const t = e.targetTouches[0]; const p = pointers[0];
+  p.texcoordX = scaleByPixelRatio(t.clientX)/canvas.width;
+  p.texcoordY = 1.0 - scaleByPixelRatio(t.clientY)/canvas.height;
+  p.prevTexcoordX = p.texcoordX; p.prevTexcoordY = p.texcoordY;
+},{passive:true});
+window.addEventListener('touchmove', e=>{
+  const t = e.targetTouches[0]; const p = pointers[0];
+  const posX = scaleByPixelRatio(t.clientX); const posY = scaleByPixelRatio(t.clientY);
+  p.color = oilColor();
+  updatePointerMoveData(p, posX, posY);
+},{passive:true});
+
+// ---------- главный цикл ----------
+initFramebuffers();
+window.addEventListener('resize', ()=>{ if(resizeCanvas()) initFramebuffers(); });
+
+function update(){
+  const dt = calcDeltaTime();
+  if(resizeCanvas()) initFramebuffers();
+  for(const p of pointers){
+    if(p.moved){ p.moved = false; splatPointer(p); }
+  }
+  step(dt);
+  render();
+  requestAnimationFrame(update);
+}
+update();
+</script>
+<div id="sheetWrap"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="stores.js?v=3"></script>
+<script src="shapes.js?v=1"></script>
+<script src="buy.js?v=18"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/environments/RoomEnvironment.js"></script>
+<script src="pack3d.js?v=18"></script>
+<script src="sheet3d.js?v=6"></script>
+<script src="about.js?v=43"></script>
+</body>
+</html>

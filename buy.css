@@ -1,0 +1,325 @@
+/* ===== Кнопка «Купить» ===== */
+.buy{position:relative;z-index:3;margin:16px 0 calc(6px + env(safe-area-inset-bottom));flex:0 0 auto;
+  font:700 clamp(18px,2.4vw,22px)/1 "Figtree",system-ui,sans-serif;letter-spacing:.04em;color:#10240f;
+  background:linear-gradient(180deg,#a8e05f,#7cc23b);border:0;border-radius:999px;padding:17px 64px;cursor:pointer;
+  box-shadow:0 10px 30px rgba(124,194,59,.35),0 0 0 1px rgba(255,255,255,.25) inset;touch-action:manipulation;
+  animation:buyglow 3s ease-in-out infinite}
+.buy:active{transform:scale(.96)}
+@keyframes buyglow{0%,100%{box-shadow:0 10px 30px rgba(124,194,59,.30),0 0 0 1px rgba(255,255,255,.25) inset}
+  50%{box-shadow:0 10px 42px rgba(124,194,59,.6),0 0 0 1px rgba(255,255,255,.25) inset}}
+
+/* пачка поменьше — больше места водить пальцем */
+.pack-bottom{max-width:min(215px,54vw);max-height:min(100%,52vh)}
+.packbox{align-items:center}
+
+/* ===== Окно выбора (снизу, сверху остаётся видно эффект) ===== */
+#sheetWrap{position:fixed;inset:0;z-index:20;pointer-events:none}
+.sheet{position:absolute;left:50%;bottom:0;width:min(720px,100%);height:min(80dvh,760px);
+  transform:translate(-50%,105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);
+  background:rgba(8,12,7,.93);border:1px solid rgba(168,224,95,.18);border-bottom:0;border-radius:26px 26px 0 0;
+  box-shadow:0 -20px 60px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden;
+  pointer-events:auto;color:#eef3e4;font-family:"Figtree",system-ui,sans-serif;text-align:left}
+.sheet.open{transform:translate(-50%,0)}
+.sh-head{display:flex;align-items:center;gap:10px;padding:14px 14px 10px;flex:0 0 auto}
+.sh-head h2{flex:1;margin:0;font:700 20px/1.15 "Playfair Display",serif;color:#efe6cf;text-align:center}
+.ib{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);
+  color:#eef3e4;font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;touch-action:manipulation}
+.ib[hidden]{visibility:hidden;display:grid!important}
+.sh-body{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.scrolly{overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;padding:6px 16px 20px}
+
+/* страны */
+.countries{display:grid;gap:12px}
+.cbtn{display:flex;align-items:center;gap:16px;width:100%;padding:18px 20px;border-radius:18px;cursor:pointer;
+  border:1px solid rgba(168,224,95,.22);background:rgba(168,224,95,.07);color:#eef3e4;font:600 20px "Figtree",sans-serif;text-align:left;touch-action:manipulation}
+.cbtn .flag{font-size:34px;line-height:1}
+.cbtn small{display:block;font-weight:400;font-size:13px;color:#9fb08c;margin-top:3px}
+.cbtn:active{background:rgba(168,224,95,.18)}
+
+/* карта */
+#map{flex:1;min-height:0;background:#0b0f0a}
+.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55)}
+.leaflet-container{font-family:"Figtree",system-ui,sans-serif}
+.leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#8a9a7a!important;font-size:10px}
+.leaflet-control-attribution a{color:#a8e05f!important}
+.city-pin{background:#a8e05f;color:#10240f;font:700 14px "Figtree",sans-serif;padding:8px 14px;border-radius:999px;
+  white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.5);transform:translate(-50%,-50%);display:inline-block;cursor:pointer}
+.city-pin.empty{background:#3a4632;color:#d9e4c9}
+.shop-pin{width:34px;height:34px;border-radius:50% 50% 50% 0;background:#7cc23b;transform:translate(-50%,-100%) rotate(-45deg);
+  border:3px solid #eaf7d4;box-shadow:0 4px 12px rgba(0,0,0,.55)}
+.shop-pin.sel{background:#e9c46a}
+
+/* полоса городов под картой */
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;touch-action:pan-x;padding:10px 14px calc(12px + env(safe-area-inset-bottom));flex:0 0 auto}
+.chip{flex:0 0 auto;padding:10px 16px;border-radius:999px;border:1px solid rgba(168,224,95,.3);background:rgba(168,224,95,.08);
+  color:#eef3e4;font:600 15px "Figtree",sans-serif;cursor:pointer;touch-action:manipulation}
+.chip.partner{border-style:dashed;color:#a8e05f}
+
+/* карточка точки */
+.card{position:absolute;left:10px;right:10px;bottom:10px;z-index:500;background:#10160d;border:1px solid rgba(168,224,95,.25);
+  border-radius:20px;padding:16px 16px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.6);
+  transform:translateY(120%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.card.open{transform:translateY(0)}
+.card h3{margin:0 34px 4px 0;font:700 19px "Figtree",sans-serif}
+.card .ex{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#10240f;
+  background:#e9c46a;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+.card p{margin:4px 0;color:#c4d0b4;font-size:15px}
+.card .x{position:absolute;top:10px;right:10px;width:34px;height:34px;font-size:16px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.act{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 10px;border-radius:14px;text-decoration:none;
+  font:700 15px "Figtree",sans-serif;color:#eef3e4;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
+.act.wa{background:#25d366;color:#05200f;border:0}
+.act.go{grid-column:1/-1;background:linear-gradient(180deg,#a8e05f,#7cc23b);color:#10240f;border:0}
+.partner-box{text-align:center;padding:8px 4px}
+.partner-box p{color:#c4d0b4}
+.note{font-size:12px;color:#7d8a6f;text-align:center;margin-top:14px}
+
+.chips::-webkit-scrollbar{display:none}
+
+/* ===== Кнопка «О продукте» ===== */
+.about{pointer-events:auto;margin-top:14px;padding:11px 28px;border-radius:999px;cursor:pointer;touch-action:manipulation;
+  font:600 clamp(15px,1.8vw,18px)/1 "Figtree",system-ui,sans-serif;letter-spacing:.05em;color:#eef3e4;
+  background:rgba(168,224,95,.10);border:1px solid rgba(168,224,95,.55);backdrop-filter:blur(4px);
+  box-shadow:0 4px 20px rgba(0,0,0,.45)}
+.about:active{transform:scale(.96);background:rgba(168,224,95,.22)}
+
+/* ===== Окно «О продукте» ===== */
+#aboutWrap{position:fixed;inset:0;z-index:21;pointer-events:none}
+.ab-text h3{margin:18px 0 8px;font:700 18px "Figtree",sans-serif;color:#a8e05f}
+.ab-text h3:first-child{margin-top:4px}
+.ab-text p{margin:6px 0;color:#d4dcc6;font-size:16px;line-height:1.5}
+.ab-text ul{margin:6px 0;padding-left:0;list-style:none}
+.ab-text li{position:relative;padding:7px 0 7px 26px;color:#e3eadb;font-size:16px;line-height:1.45}
+.ab-text li::before{content:"";position:absolute;left:4px;top:14px;width:10px;height:10px;border-radius:50%;background:#7cc23b;
+  box-shadow:0 0 8px rgba(124,194,59,.7)}
+.ab-howto{margin-top:16px;padding:14px 16px;border-radius:16px;background:rgba(168,224,95,.08);border:1px solid rgba(168,224,95,.22)}
+.ab-howto b{color:#a8e05f}
+.ab-award{padding:16px;border-radius:18px;background:linear-gradient(160deg,rgba(233,196,106,.16),rgba(233,196,106,.04));
+  border:1px solid rgba(233,196,106,.4);margin-bottom:12px}
+.ab-award .cup{font-size:34px}
+.ab-award b{display:block;font-size:18px;color:#f2dfa8;margin:6px 0 2px}
+.ab-soon{padding:22px 16px;border-radius:16px;border:1px dashed rgba(255,255,255,.18);color:#9fb08c;text-align:center;font-size:15px}
+.ab-faq details{border-bottom:1px solid rgba(255,255,255,.08);padding:4px 0}
+.ab-faq summary{cursor:pointer;padding:12px 0;font:600 16px "Figtree",sans-serif;color:#eef3e4;list-style:none}
+.ab-faq summary::-webkit-details-marker{display:none}
+.ab-faq summary::after{content:"+";float:right;color:#a8e05f;font-size:20px;line-height:1}
+.ab-faq details[open] summary::after{content:"−"}
+.ab-faq details p{margin:0 0 12px;color:#c4d0b4;font-size:15px;line-height:1.45}
+.ab-tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  padding:10px 12px calc(12px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.07);background:rgba(5,8,4,.6)}
+.ab-tab{padding:13px 6px;border-radius:14px;border:1px solid rgba(168,224,95,.3);background:rgba(168,224,95,.08);
+  color:#eef3e4;font:600 14px "Figtree",sans-serif;cursor:pointer;touch-action:manipulation}
+.ab-tab.on{background:linear-gradient(180deg,#a8e05f,#7cc23b);color:#10240f;border-color:transparent}
+.ab-legal{margin-top:20px;font-size:12px;color:#7d8a6f;text-align:center}
+
+/* телефон боком: слева текст + «О продукте» + «Купить» столбиком, справа пачка.
+   Стоит В КОНЦЕ файла, чтобы перебивать обычные размеры кнопок; всё считается от высоты экрана */
+@media (max-height:540px) and (orientation:landscape){
+  body{display:grid;grid-template-columns:minmax(0,52%) auto;grid-template-rows:1fr auto;
+    column-gap:6vw;align-items:center;justify-content:center;padding:calc(2.5*var(--vh,1vh)) 4vw calc(calc(3*var(--vh,1vh)) + env(safe-area-inset-bottom))}
+  .stage{grid-column:1;grid-row:1;align-self:end;max-width:none}
+  .eyebrow{font-size:clamp(8px,calc(2.6*var(--vh,1vh)),12px);margin-bottom:calc(1.2*var(--vh,1vh))}
+  .brand{font-size:clamp(20px,calc(8.5*var(--vh,1vh)),44px)}
+  .kz{font-size:clamp(11px,calc(3.6*var(--vh,1vh)),20px);margin:calc(1.2*var(--vh,1vh)) 0 0}
+  .about{margin-top:calc(3*var(--vh,1vh));padding:clamp(6px,calc(2.2*var(--vh,1vh)),10px) clamp(16px,calc(6*var(--vh,1vh)),26px);font-size:clamp(12px,calc(4*var(--vh,1vh)),16px)}
+  .buy{grid-column:1;grid-row:2;justify-self:center;margin:calc(3.5*var(--vh,1vh)) 0 0;
+    padding:clamp(9px,calc(3.4*var(--vh,1vh)),14px) clamp(30px,calc(11*var(--vh,1vh)),48px);font-size:clamp(14px,calc(4.8*var(--vh,1vh)),20px)}
+  .packbox{grid-column:2;grid-row:1/3;height:calc(90*var(--vh,1vh));width:auto;margin:0}
+  .pack-bottom{max-height:calc(70*var(--vh,1vh))!important;max-width:26vw!important}
+  .sheet{height:92dvh}
+}
+
+/* «Состав» — тёмный прозрачный фон, белые буквы, сзади виден эффект */
+.ab-mixbtn{display:block;width:100%;margin:0 0 14px;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.06);color:#fff;font:700 17px "Figtree",sans-serif;cursor:pointer}
+#mixWrap{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.42);color:#fff;overflow:hidden;
+  opacity:0;transform:translateY(100%);transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .3s;pointer-events:none}
+#mixWrap.open{opacity:1;transform:none;pointer-events:auto}
+.mix-zoom{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform-origin:center;touch-action:none;cursor:default}
+.mix-in{width:min(560px,92vw);max-height:none;padding:10px 4px;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.mix-in h2{margin:0 0 6px;font:800 clamp(22px,6vw,32px) "Figtree",sans-serif;text-align:center}
+.mix-in h3{margin:12px 0 4px;font:700 13px "Figtree",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65)}
+.mix-in dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr) auto);column-gap:12px;row-gap:3px;margin:0}
+.mix-in dt{font-size:clamp(12px,3.4vw,16px);color:rgba(255,255,255,.85)}
+.mix-in dd{margin:0;font:700 clamp(12px,3.4vw,16px) "Figtree",sans-serif;text-align:right;white-space:nowrap}
+.mix-note{margin:12px 0 0;font-size:12px;color:rgba(255,255,255,.55);text-align:center}
+.mix-x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:2;width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.35);color:#fff;font-size:20px;cursor:pointer}
+.mix-hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));text-align:center;font-size:13px;color:rgba(255,255,255,.6);pointer-events:none}
+@media (max-width:420px){.mix-in dl{grid-template-columns:minmax(0,1fr) auto}}
+body.mix-on .stage,body.mix-on .packbox,body.mix-on #buyBtn,body.mix-on .buy{opacity:0;transition:opacity .3s;pointer-events:none}
+.mix-in{text-align:left}
+.mix-in h2,.mix-note{text-align:center}
+
+/* ===== «Где купить» на весь экран: чёрный прозрачный фон, сзади эффект ===== */
+#sheetWrap.full .sheet{left:0;right:0;top:0;bottom:0;width:100%;height:100%;border:0;border-radius:0;box-shadow:none;
+  background:rgba(0,0,0,.42);transform:translateY(105%)}
+#sheetWrap.full .sheet.open{transform:none}
+#sheetWrap.full .sh-head{padding-top:calc(14px + env(safe-area-inset-top))}
+#sheetWrap.full .sh-head h2{color:#fff}
+#sheetWrap.full .countries{width:min(560px,100%);margin:0 auto}
+#sheetWrap.full .cbtn{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;padding:14px 16px;
+  background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.16);color:#fff}
+#sheetWrap.full .cbtn small{color:rgba(255,255,255,.6)}
+#sheetWrap.full .partner-box{width:min(560px,100%);margin-left:auto;margin-right:auto}
+#sheetWrap.full .partner-box p{color:rgba(255,255,255,.75)}
+.cname{min-width:0}
+.mini{width:118px;height:74px;display:block}
+.mini path{fill:rgba(168,224,95,.16);stroke:rgba(168,224,95,.75);stroke-width:1;stroke-linejoin:round}
+.mini circle.on{fill:#e9f8cf;stroke:#7cc23b;stroke-width:2}
+.mini circle.off{fill:rgba(255,255,255,.35)}
+@media (max-width:380px){.mini{width:92px;height:58px}}
+@media (max-height:540px) and (orientation:landscape){
+  #sheetWrap.full .sheet{height:100%}
+  #sheetWrap.full .countries{width:100%;grid-template-columns:repeat(3,minmax(0,1fr))}
+  #sheetWrap.full .cbtn{grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;padding:10px 12px}
+  #sheetWrap.full .cbtn .mini{grid-column:1/-1;justify-self:center;width:100%;height:auto;max-height:calc(26*var(--vh,1vh))}
+  #sheetWrap.full .partner-box{margin-top:8px!important;padding:0;display:flex;align-items:center;justify-content:center;gap:14px}
+  #sheetWrap.full .partner-box p{margin:0}
+  #sheetWrap.full .partner-box .act{padding:10px 22px}
+  #sheetWrap.full .sh-head{padding-top:8px;padding-bottom:4px}
+  #sheetWrap.full .ib{width:36px;height:36px}
+}
+.card{transform:translateY(calc(100% + 60px))}
+/* состав боком: на всю ширину, 3 колонки, подсказку прячем */
+@media (orientation:landscape) and (max-height:540px){
+  .mix-in{width:min(1100px,calc(100vw - 120px))}
+  .mix-in dl{grid-template-columns:repeat(3,minmax(0,1fr) auto);column-gap:18px}
+  .mix-in h2{font-size:calc(6.5*var(--vh,1vh));margin-bottom:2px}
+  .mix-in h3{margin:calc(1.5*var(--vh,1vh)) 0 2px;font-size:calc(3.4*var(--vh,1vh))}
+  .mix-in dt,.mix-in dd{font-size:calc(4.6*var(--vh,1vh))}
+  .mix-hint{display:none}
+}
+/* экраны по очереди: кнопка «следующий» слева вверху */
+.mix-next{position:absolute;top:calc(12px + env(safe-area-inset-top));left:14px;z-index:2;height:44px;padding:0 18px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.35);color:#fff;font:600 16px "Figtree",sans-serif;cursor:pointer;touch-action:manipulation}
+.mix-next:active,.mix-x:active{transform:scale(.95)}
+.pg-in{animation:pgin .35s ease}
+@keyframes pgin{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.pg-card{margin:14px auto 0;max-width:420px;padding:20px;border-radius:20px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);text-align:center}
+.pg-big{font-size:46px;line-height:1.1}
+.pg-card b{display:block;margin-top:8px;font:700 19px "Figtree",sans-serif}
+.pg-card p{margin:6px 0 0;color:rgba(255,255,255,.75)}
+.pg-soon{margin:18px 0 0;text-align:center;color:rgba(255,255,255,.6);font-size:16px}
+.pg-q{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.pg-q b{font:700 17px "Figtree",sans-serif}
+.pg-q p{margin:4px 0 0;color:rgba(255,255,255,.7);font-size:15px}
+.pg-cert{display:block;width:100%;max-width:520px;margin:12px auto 0;border-radius:6px}
+/* листалка документов на экране «Сертификаты» */
+.doc-bar{display:none;position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2;align-items:center;gap:14px;
+  padding:6px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font:600 16px "Figtree",sans-serif}
+.doc-bar button{width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;font-size:26px;line-height:1;cursor:pointer;touch-action:manipulation}
+.doc-bar span{min-width:56px;text-align:center}
+#mixWrap.docs .doc-bar{display:flex}
+#mixWrap.docs .mix-hint{display:none}
+#mixWrap.docs .mix-in h2{font-size:20px}
+@media (orientation:landscape) and (max-height:540px){.doc-bar{left:auto;right:14px;transform:none}}
+/* Сертификаты — сетка миниатюр, нажатие раскрывает на весь экран */
+.doc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:640px;margin:0 auto}
+@media (min-width:600px){.doc-grid{grid-template-columns:repeat(3,1fr)}}
+@media (orientation:landscape) and (max-height:540px){.doc-grid{grid-template-columns:repeat(4,1fr)}}
+.doc-th{display:flex;flex-direction:column;gap:6px;padding:0;border:0;background:none;color:#ddd;font:inherit;font-size:12px;line-height:1.25;text-align:center;cursor:pointer;touch-action:manipulation}
+.doc-th img{width:100%;aspect-ratio:1240/1754;object-fit:cover;background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+#mixWrap.doc-open .pg-cert{cursor:zoom-out}
+#mixWrap.docs:not(.doc-open) .mix-zoom{align-items:flex-start;overflow-y:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#mixWrap.docs:not(.doc-open) .mix-in{padding:64px 4px 30px}
+.doc-grid.one{grid-template-columns:min(220px,60%);justify-content:center;margin-top:14px}
+.doc-grid.one .doc-th img{aspect-ratio:auto}
+/* список стран без рамок и плашек — флаг, название и карта прямо на экране */
+#sheetWrap.full .cbtn{background:none;border:0;border-radius:14px;padding:12px 6px;font-size:22px}
+#sheetWrap.full .cbtn .flag{font-size:40px}
+#sheetWrap.full .cbtn:active{background:rgba(168,224,95,.1)}
+#sheetWrap.full .countries{gap:6px}
+#sheetWrap.full .mini{width:150px;height:94px}
+#sheetWrap.full .mini path{fill:rgba(168,224,95,.2);stroke:rgba(168,224,95,.85);filter:drop-shadow(0 0 6px rgba(168,224,95,.35))}
+@media (max-width:380px){#sheetWrap.full .mini{width:116px;height:72px}}
+/* большая карта страны */
+.bigc{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:10px 14px calc(16px + env(safe-area-inset-bottom));position:relative;overflow:hidden}
+.bigmap{position:relative;width:min(100%,calc(62*var(--vh,1vh)*1.6),900px);aspect-ratio:160/100}
+.bigmap svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bigmap path{fill:rgba(168,224,95,.16);stroke:rgba(168,224,95,.9);stroke-width:.45;stroke-linejoin:round;filter:drop-shadow(0 0 4px rgba(168,224,95,.4))}
+.bcity{position:absolute;transform:translate(-9px,-50%);display:flex;align-items:center;gap:6px;padding:6px 4px;border:0;background:none;color:#fff;
+  font:700 15px "Figtree",sans-serif;text-shadow:0 1px 6px #000,0 0 2px #000;cursor:pointer;white-space:nowrap;touch-action:manipulation}
+.bcity.left{flex-direction:row-reverse;transform:translate(calc(-100% + 9px),-50%)}
+.bcity i{flex:0 0 auto;width:14px;height:14px;border-radius:50%;background:#e9f8cf;border:3px solid #7cc23b;box-shadow:0 0 0 0 rgba(168,224,95,.7);animation:bpulse 2s infinite}
+.bcity.off{color:rgba(255,255,255,.6)}
+.bcity.off i{background:rgba(255,255,255,.4);border-color:rgba(255,255,255,.25);animation:none}
+@keyframes bpulse{0%{box-shadow:0 0 0 0 rgba(168,224,95,.7)}100%{box-shadow:0 0 0 12px rgba(168,224,95,0)}}
+.bhint{margin:0;color:rgba(255,255,255,.6);font-size:14px}
+.bigc .card{position:absolute}
+/* состав появляется плавно, «из растворившейся упаковки» */
+#mixWrap{transform:scale(.97);transition:opacity .6s ease,transform .6s ease}
+#mixWrap.open{transform:none}
+/* объёмный 3D-пакет при перевороте */
+.pk3d{position:fixed;z-index:25;perspective:1000px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pk-c{position:absolute;inset:0;transform-style:preserve-3d}
+.pk-c img,.pk-c i{position:absolute;display:block;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.pk-c img{inset:0;width:100%;height:100%}
+.pk-s{background:linear-gradient(90deg,#c9d3cc,#f4f7f3 35%,#ffffff 50%,#e6ece6 70%,#b9c4bc)}
+.pk-t{background:linear-gradient(#d9e0da,#ffffff 50%,#cfd7d0)}
+.pk-sh{position:absolute;left:8%;right:8%;bottom:-26px;height:22px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.75),transparent 70%);filter:blur(4px)}
+/* «Как принимать» — 3 шага с картинками с упаковки */
+.howto{display:flex;flex-direction:column;gap:10px;margin:10px 0 12px}
+.ht-step{display:flex;gap:12px;align-items:center;text-align:left}
+.ht-step img{width:92px;height:92px;object-fit:cover;border-radius:16px;flex:none;background:#f3f5f0}
+.ht-step b{display:block;font:700 17px "Figtree",sans-serif;margin-bottom:3px}
+.ht-step b span{color:#8bc34a;margin-right:7px}
+.ht-step p{margin:0;font-size:14px;line-height:1.35;opacity:.85}
+.ht-note{background:rgba(139,195,74,.12);border:1px solid rgba(139,195,74,.35);border-radius:14px;padding:8px 12px;text-align:left}
+.ht-note p{margin:4px 0;font-size:14px;line-height:1.35}
+.ht-rec{margin:16px 0 0;text-align:center}
+/* пухлый пакет: две выпуклые стороны из кусочков */
+.pk-face{position:absolute;inset:0;transform-style:preserve-3d}
+.pk-back{transform:rotateY(180deg)}
+.pk-face i{position:absolute;display:block;backface-visibility:hidden;-webkit-backface-visibility:hidden;background-repeat:no-repeat}
+/* все 11 сертификатов сразу на одном экране, без прокрутки, на всю страницу */
+.doc-grid.many{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,minmax(0,1fr));gap:8px;max-width:none;
+  height:calc(100vh - 128px);height:calc(100dvh - 128px)}
+.doc-grid.many .doc-th{min-height:0;min-width:0}
+.doc-grid.many .doc-th span{display:none}
+.doc-grid.many .doc-th img{width:100%;height:100%;min-height:0;aspect-ratio:auto;object-fit:contain;background:none;box-shadow:none;border-radius:0;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+#mixWrap.docs:not(.doc-open) .mix-in:has(.many){padding:60px 0 8px;width:96vw}
+@media (orientation:landscape){.doc-grid.many{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,minmax(0,1fr))}}
+/* 3D-упаковка: прозрачный холст поверх страницы; когда увеличена пальцами — перехватывает нажатия */
+.pack3d-cv{position:fixed;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;transition:opacity .3s}
+.pack3d-cv.big{z-index:20}
+
+/* 3D-листы сертификатов рисуются поверх, нажатия проходят к настоящим картинкам */
+.sheet3d-cv{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+#mixWrap.doc-open .pg-cert{cursor:grab}
+
+/* состав открыт кнопкой вверху — 3D-пакет прячется, остаётся чёрный экран */
+body.mix-on .pack3d-cv{opacity:0;transition:opacity .3s;pointer-events:none}
+body:has(.pack3d-cv.big){touch-action:none}
+
+.mix-back{right:66px;font-size:22px;line-height:1}
+.mix-back.hide{display:none}
+
+/* список стран на весь экран (21.11): строки делят высоту поровну, карта большая, название страны поверх карты */
+#sheetWrap.full .clist{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+#sheetWrap.full .clist .countries{flex:1;min-height:0;display:flex;flex-direction:column;gap:4px;width:min(720px,100%)}
+#sheetWrap.full .clist .cbtn{flex:1 1 0;min-height:120px;display:flex;align-items:center;gap:10px;padding:6px 4px}
+#sheetWrap.full .clist .cmap{flex:1;align-self:stretch;position:relative;min-width:0}
+#sheetWrap.full .clist .mini{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#sheetWrap.full .clist .mini path{stroke-width:.7}
+#sheetWrap.full .clist .cname{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;white-space:nowrap;
+  font:800 clamp(28px,9vw,52px)/1 "Figtree",sans-serif;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.9)}
+#sheetWrap.full .clist .cname small{font-size:.36em;font-weight:600;margin-top:6px;color:rgba(255,255,255,.85)}
+#sheetWrap.full .clist .partner-box{margin-top:10px;flex:none}
+#sheetWrap.full .clist .partner-box p{margin:0 0 8px}
+@media (max-height:540px) and (orientation:landscape){
+  #sheetWrap.full .clist .countries{flex-direction:row;width:100%}
+  #sheetWrap.full .clist .cbtn{flex-direction:column;min-height:0}
+  #sheetWrap.full .clist .cmap{width:100%}
+  #sheetWrap.full .clist .cname{font-size:clamp(22px,6vh,40px)}
+  #sheetWrap.full .clist .partner-box p{margin:0}
+}
+
+/* карта страны увеличивается (21.11) */
+.bview{flex:1;min-height:0;width:100%;position:relative;overflow:hidden;display:grid;place-items:center;touch-action:none}
+.bview .bigmap{--s:1;transform-origin:50% 50%;will-change:transform}
+.bview.zoomed .bigmap{cursor:grab}
+.bigmap path{vector-effect:non-scaling-stroke;stroke-width:1.3}
+.bcity{transform:translate(-9px,-50%) scale(calc(1/var(--s,1)));transform-origin:9px 50%}
+.bcity.left{transform:translate(calc(-100% + 9px),-50%) scale(calc(1/var(--s,1)));transform-origin:calc(100% - 9px) 50%}
