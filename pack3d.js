@@ -220,6 +220,8 @@ window.Pack3D = {   // складки, блики, тени
 
     // одним пальцем (или мышью) — крутить упаковку как угодно, с инерцией
     img.style.touchAction = 'none';
+    img.draggable = false;                                  // мышью на компьютере: браузер не тащит картинку, пакет крутится
+    img.addEventListener('dragstart', e => e.preventDefault());
     const pts = new Map(); let drag = null;
     const down = e => {
       if (document.body.classList.contains('mix-on')) return;
