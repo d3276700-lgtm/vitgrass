@@ -147,3 +147,6 @@
     document.body.appendChild(box);
   };
 })();
+
+// мышью на компьютере браузер не перетаскивает картинки (упаковка, дипломы, сертификаты) — их можно крутить
+document.addEventListener('dragstart', e => { if (e.target && e.target.tagName === 'IMG') e.preventDefault(); });
